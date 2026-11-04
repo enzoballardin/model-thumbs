@@ -110,6 +110,19 @@ Run this way, `build.sh` asks before installing OpenCASCADE.
 | `bash build.sh --no-cad` | Skip STEP / IGES / BREP support |
 | `bash build.sh --no-install` | Only build `build/ModelThumbs.app`, don't install it |
 
+### Verify a build
+
+To check a build before installing it:
+
+```bash
+bash build.sh --no-install
+python3 -I Tools/verify.py build/ModelThumbs.app
+```
+
+This checks the signatures, the extension's sandbox entitlements, linked libraries and
+imports, then renders `Samples/` and the malformed files from `Tests/` under `sandbox-exec`
+with no network.
+
 ### Check it's enabled
 
 Open **System Settings → General → Login Items & Extensions → Quick Look** (on older macOS:
@@ -407,7 +420,10 @@ model-thumbs/
 │   └── CLI/                 modelthumbs-render command-line tool
 ├── Tools/
 │   ├── uticheck.swift       Finds file type identifiers already registered on this Mac
+│   ├── verify.py            Bundle checks and sandboxed render tests
 │   └── bundle_dylibs.py     Copies OpenCASCADE libraries into the app bundle
+├── Tests/
+│   └── make_malformed.py    Malformed model files for verify.py
 ├── Resources/
 │   └── Extension.entitlements
 └── Samples/                 Small test files used by build.sh
