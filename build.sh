@@ -307,16 +307,41 @@ REG="$(pluginkit -m -v -i "$EXT_ID" 2>/dev/null || true)"
 if [ -n "$REG" ]; then echo "$REG"; else warn "pluginkit doesn't list the extension yet (see Troubleshooting in README.md)"; fi
 
 step "Test thumbnails"
+# 1) The renderer itself, with the installed (bundled) libraries: fast and reliable.
 TMP="$(mktemp -d)"
+RENDER="$DEST/Contents/MacOS/modelthumbs-render"
 OK=0; TOTAL=0
 for f in Samples/*; do
   ext="${f##*.}"
   if [[ "$ext" =~ ^(step|igs)$ ]] && [ -z "$OCCT" ]; then continue; fi
   TOTAL=$((TOTAL + 1))
-  qlmanage -t -s 256 -o "$TMP" "$f" >/dev/null 2>&1 || true
-  if [ -s "$TMP/$(basename "$f").png" ]; then OK=$((OK + 1)); echo "  ok    $(basename "$f")"; else echo "  FAIL  $(basename "$f")"; fi
+  if "$RENDER" "$f" "$TMP/$(basename "$f").png" 256 >/dev/null 2>"$TMP/err.txt" && [ -s "$TMP/$(basename "$f").png" ]; then
+    OK=$((OK + 1)); echo "  ok    $(basename "$f")"
+  else
+    echo "  FAIL  $(basename "$f"): $(head -c 200 "$TMP/err.txt")"
+  fi
 done
-echo "$OK of $TOTAL sample thumbnails rendered (images in $TMP)"
+echo "$OK of $TOTAL samples rendered (images in $TMP)"
+
+# 2) One end-to-end check through Quick Look. qlmanage can hang on some macOS
+#    versions, so it gets a time limit and never blocks the install.
+QL_FILE="Samples/sample.obj"
+QL_DIR="$TMP/quicklook"; mkdir -p "$QL_DIR"
+qlmanage -t -s 256 -o "$QL_DIR" "$QL_FILE" >/dev/null 2>&1 &
+QL_PID=$!
+for _ in $(seq 1 30); do
+  [ -s "$QL_DIR/$(basename "$QL_FILE").png" ] && break
+  kill -0 "$QL_PID" 2>/dev/null || break
+  sleep 0.5
+done
+kill "$QL_PID" 2>/dev/null || true
+wait "$QL_PID" 2>/dev/null || true
+if [ -s "$QL_DIR/$(basename "$QL_FILE").png" ]; then
+  echo "  ok    Quick Look produced a thumbnail through the extension"
+else
+  echo "  note  Quick Look's test tool didn't return a thumbnail within 15 s. This tool is"
+  echo "        unreliable on recent macOS; check the icons in Finder instead."
+fi
 
 open "$DEST"
 bold ""

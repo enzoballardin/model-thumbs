@@ -255,6 +255,9 @@ qlmanage -t -s 512 -o /tmp ~/path/to/model.3mf
 open /tmp/model.3mf.png
 ```
 
+On some macOS versions `qlmanage` never exits. If it hasn't finished after about 20 seconds,
+press Ctrl+C and look at the icons in Finder instead; that's the real test.
+
 **See why a file has no thumbnail.** The command-line renderer uses the same code as the
 extension and prints the error:
 
