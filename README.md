@@ -40,6 +40,7 @@ the background and there's nothing to re-run when you add files.
 - [How it works](#how-it-works)
 - [Known limitations](#known-limitations)
 - [Project structure](#project-structure)
+- [Contributors](#contributors)
 - [Acknowledgements](#acknowledgements)
 
 ---
@@ -429,6 +430,26 @@ model-thumbs/
 │   └── Extension.entitlements
 └── Samples/                 Small test files used by build.sh
 ```
+
+---
+
+## Contributors
+
+ModelThumbs was created by [@enzoballardin](https://github.com/enzoballardin), with
+contributions from:
+
+- [@pleasantone](https://github.com/pleasantone) (Paul Traina): fixed thumbnails that only
+  filled a quarter of the icon on Retina displays
+  ([#2](https://github.com/enzoballardin/model-thumbs/pull/2)), hardened the parsers against
+  malformed files ([#3](https://github.com/enzoballardin/model-thumbs/pull/3)), added the
+  build verification script ([#4](https://github.com/enzoballardin/model-thumbs/pull/4)), and
+  replaced the installer's Quick Look test with a reliable one
+  ([#5](https://github.com/enzoballardin/model-thumbs/pull/5)).
+
+Contributions are welcome: open an
+[issue](https://github.com/enzoballardin/model-thumbs/issues) or a
+[pull request](https://github.com/enzoballardin/model-thumbs/pulls). Sample files that get a
+blank or wrong thumbnail are especially useful.
 
 ---
 
