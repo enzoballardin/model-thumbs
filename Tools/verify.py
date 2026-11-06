@@ -70,6 +70,20 @@ def check_bundle(app):
                 outside.append(f"{os.path.basename(path)} -> {ref}")
     report(not outside, f"libraries stay inside the bundle or the OS ({len(libs)} bundled)", "; ".join(outside[:5]))
 
+    missing = []
+    for name, path in binaries.items():
+        base = os.path.dirname(path)
+        lines = out("otool", "-l", path).splitlines()
+        rpaths = [lines[i + 2].strip().split()[1] for i, l in enumerate(lines) if "LC_RPATH" in l]
+        dirs = [r.replace("@executable_path", base).replace("@loader_path", base) for r in rpaths]
+        for line in out("otool", "-L", path).splitlines()[1:]:
+            ref = line.strip().split(" (compatibility")[0]
+            if ref.startswith("@rpath/") and not ref.startswith("@rpath/libswift"):
+                lib = ref[len("@rpath/"):]
+                if not any(os.path.exists(os.path.join(d, lib)) for d in dirs):
+                    missing.append(f"{name} -> {lib}")
+    report(not missing, "bundled libraries resolve from each binary", "; ".join(missing[:5]))
+
     for name, path in binaries.items():
         imports = set(out("nm", "-u", path).split())
         bad = (imports & FORBIDDEN) - ALLOWED.get(name, set())
@@ -136,7 +150,7 @@ def main():
     malformed_only = "--malformed-only" in args
     args = [a for a in args if a != "--malformed-only"]
     if len(args) != 1 or not os.path.exists(args[0]):
-        sys.exit("Nothing to verify. Run: bash build.sh --no-install")
+        sys.exit("Nothing to verify. Run: make build")
     with tempfile.TemporaryDirectory() as tmp:
         workdir = os.path.realpath(tmp)
         if malformed_only:
