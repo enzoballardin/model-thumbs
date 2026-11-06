@@ -21,6 +21,7 @@ import zlib
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 EXT = "Contents/PlugIns/ModelThumbsThumbnailer.appex"
+PREVIEW = "Contents/PlugIns/ModelThumbsPreviewer.appex"
 EXPECTED_ENTITLEMENTS = {"com.apple.security.app-sandbox": True,
                          "com.apple.security.files.user-selected.read-only": True}
 FORBIDDEN = {"_socket", "_connect", "_getaddrinfo", "_posix_spawn", "_posix_spawnp", "_execve", "_execv",
@@ -48,17 +49,20 @@ def out(*args):
 def check_bundle(app):
     print("Bundle")
     ext = os.path.join(app, EXT)
+    preview = os.path.join(app, PREVIEW)
     binaries = {"ModelThumbs": os.path.join(app, "Contents/MacOS/ModelThumbs"),
                 "modelthumbs-render": os.path.join(app, "Contents/MacOS/modelthumbs-render"),
-                "ModelThumbsThumbnailer": os.path.join(ext, "Contents/MacOS/ModelThumbsThumbnailer")}
-    for path in (ext, app):
+                "ModelThumbsThumbnailer": os.path.join(ext, "Contents/MacOS/ModelThumbsThumbnailer"),
+                "ModelThumbsPreviewer": os.path.join(preview, "Contents/MacOS/ModelThumbsPreviewer")}
+    for path in (ext, preview, app):
         result = subprocess.run(["codesign", "--verify", "--strict", path], capture_output=True, text=True)
         report(result.returncode == 0, f"signature {os.path.basename(path)}", result.stderr.strip())
 
-    xml = subprocess.run(["codesign", "-d", "--entitlements", "-", "--xml", ext], capture_output=True).stdout
-    entitlements = plistlib.loads(xml) if xml else {}
-    report(entitlements == EXPECTED_ENTITLEMENTS, "extension is sandboxed, read-only, no network",
-           "" if entitlements == EXPECTED_ENTITLEMENTS else str(entitlements))
+    for path in (ext, preview):
+        xml = subprocess.run(["codesign", "-d", "--entitlements", "-", "--xml", path], capture_output=True).stdout
+        entitlements = plistlib.loads(xml) if xml else {}
+        report(entitlements == EXPECTED_ENTITLEMENTS, f"{os.path.basename(path)} is sandboxed, read-only, no network",
+               "" if entitlements == EXPECTED_ENTITLEMENTS else str(entitlements))
 
     frameworks = os.path.join(ext, "Contents/Frameworks")
     libs = [os.path.join(frameworks, n) for n in sorted(os.listdir(frameworks))] if os.path.isdir(frameworks) else []
