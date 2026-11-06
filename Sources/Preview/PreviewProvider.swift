@@ -10,6 +10,8 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
 
     /// Longest side of the preview in points. Rendered models get twice this in pixels.
     static let displaySize: CGFloat = 800
+    /// A 3MF image smaller than this looks soft at full size, so the geometry is rendered instead.
+    static let minimumSharpImage = 600
 
     override init() {
         super.init()
@@ -31,7 +33,14 @@ final class PreviewProvider: QLPreviewProvider, QLPreviewingController {
     }
 
     static func image(for url: URL) throws -> CGImage {
-        switch try ModelLoader.load(url) {
+        var result = try ModelLoader.load(url)
+        if url.pathExtension.lowercased() == "3mf", case .image(let data) = result,
+           let size = Loader3MF.imageSize(data), max(size.width, size.height) < minimumSharpImage {
+            var options = ModelLoader.Options()
+            options.preferEmbeddedThumbnail = false
+            result = try ModelLoader.load(url, options: options)
+        }
+        switch result {
         case .image(let data):
             guard let source = CGImageSourceCreateWithData(data as CFData, nil),
                   let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {

@@ -31,7 +31,7 @@ FORBIDDEN = {"_socket", "_connect", "_getaddrinfo", "_posix_spawn", "_posix_spaw
 # The host app's "Refresh thumbnails" button runs qlmanage and killall.
 ALLOWED = {"ModelThumbs": {"_OBJC_CLASS_$_NSTask"}}
 # True: must be rejected with an error. False: either outcome is fine, but no crash.
-MALFORMED = {"bomb.3mf": True, "negoffset.gltf": True, "negstride.gltf": True, "scalarpos.gltf": True,
+MALFORMED = {"badcolors.3mf": False, "bomb.3mf": True, "negoffset.gltf": True, "negstride.gltf": True, "scalarpos.gltf": True,
              "traversal.gltf": True, "negsize.pcd": True, "shortbody.pcd": True, "trunc.ply": False}
 failures = []
 
