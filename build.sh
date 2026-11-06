@@ -323,24 +323,15 @@ for f in Samples/*; do
 done
 echo "$OK of $TOTAL samples rendered (images in $TMP)"
 
-# 2) One end-to-end check through Quick Look. qlmanage can hang on some macOS
-#    versions, so it gets a time limit and never blocks the install.
-QL_FILE="Samples/sample.obj"
+# 2) One end-to-end check through Quick Look, the way Finder asks for thumbnails.
+#    It has a time limit, and a failure here never blocks the install.
 QL_DIR="$TMP/quicklook"; mkdir -p "$QL_DIR"
-qlmanage -t -s 256 -o "$QL_DIR" "$QL_FILE" >/dev/null 2>&1 &
-QL_PID=$!
-for _ in $(seq 1 30); do
-  [ -s "$QL_DIR/$(basename "$QL_FILE").png" ] && break
-  kill -0 "$QL_PID" 2>/dev/null || break
-  sleep 0.5
-done
-kill "$QL_PID" 2>/dev/null || true
-wait "$QL_PID" 2>/dev/null || true
-if [ -s "$QL_DIR/$(basename "$QL_FILE").png" ]; then
+if swiftc -O -target "$ARCH-apple-macos13.0" -sdk "$SDK" Tools/qlcheck.swift -o "$BUILD/qlcheck" \
+  && "$BUILD/qlcheck" "$QL_DIR" Samples/sample.obj; then
   echo "  ok    Quick Look produced a thumbnail through the extension"
 else
-  echo "  note  Quick Look's test tool didn't return a thumbnail within 15 s. This tool is"
-  echo "        unreliable on recent macOS; check the icons in Finder instead."
+  echo "  note  Quick Look didn't return a thumbnail. The extension may still be registering;"
+  echo "        check the icons in Finder, or see Troubleshooting in README.md."
 fi
 
 open "$DEST"

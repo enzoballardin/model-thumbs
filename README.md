@@ -420,6 +420,7 @@ model-thumbs/
 │   └── CLI/                 modelthumbs-render command-line tool
 ├── Tools/
 │   ├── uticheck.swift       Finds file type identifiers already registered on this Mac
+│   ├── qlcheck.swift        Requests thumbnails through Quick Look with a time limit
 │   ├── verify.py            Bundle checks and sandboxed render tests
 │   └── bundle_dylibs.py     Copies OpenCASCADE libraries into the app bundle
 ├── Tests/
