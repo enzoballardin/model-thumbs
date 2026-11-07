@@ -6,14 +6,15 @@
 ![macOS 13+](https://img.shields.io/badge/macOS-13%2B-lightgrey)
 
 macOS shows a preview icon for `.stl` files, but most other model formats get a generic
-document icon. ModelThumbs is a Quick Look thumbnail extension that adds real previews for
+document icon. ModelThumbs adds real thumbnails and Quick Look previews for
 **70+ file extensions**: 3MF projects, STEP parts, OBJ meshes, point cloud scans, resin
 printer files, G-code, and the native files of SolidWorks, Fusion, Rhino, SketchUp, Blender
 and more.
 
 It works like the built-in STL previews. Finder draws the icons by itself whenever it needs
-them, in every view (icons, columns, gallery, Get Info) and in Quick Look. Nothing runs in
-the background and there's nothing to re-run when you add files.
+them, in every view (icons, columns, gallery, Get Info), and pressing space on a file shows
+a large preview. Nothing runs in the background and there's nothing to re-run when you add
+files.
 
 - **Native and lightweight:** written in Swift. Models are drawn by a small built-in
   renderer, so no GPU or 3D engine is needed.
@@ -136,10 +137,10 @@ There are three ways a thumbnail gets made:
 
 | Format | Extensions | Thumbnail |
 |---|---|---|
-| 3MF (Bambu Studio, OrcaSlicer, PrusaSlicer, Cura, MakerWorld, Printables…) | `.3mf` (incl. `.gcode.3mf`) | Embedded or rendered |
+| 3MF (Bambu Studio, OrcaSlicer, PrusaSlicer, Cura, MakerWorld, Printables…) | `.3mf` (incl. `.gcode.3mf`) | Embedded or rendered: the largest stored image, otherwise plate 1 rendered in the project's filament colors |
 | AMF (Additive Manufacturing File) | `.amf` | Rendered |
-| G-code (PrusaSlicer, OrcaSlicer, Bambu, Cura…) | `.gcode` `.gco` | Embedded preview |
-| Binary G-code (Prusa) | `.bgcode` | Embedded preview |
+| G-code (PrusaSlicer, OrcaSlicer, Bambu, Cura…) | `.gcode` `.gco` | Embedded preview (PNG, JPEG or QOI) |
+| Binary G-code (Prusa) | `.bgcode` | Embedded preview (PNG, JPEG or QOI) |
 | Ultimaker Cura package | `.ufp` | Embedded preview |
 
 ### Resin (MSLA / DLP) printer files
@@ -342,20 +343,20 @@ It also reads `.stl` and `.asc` point clouds, which the Finder extension doesn't
 ## How it works
 
 ```
-Finder ──► Quick Look ──► ModelThumbs extension (sandboxed)
+Finder ──► Quick Look ──► ModelThumbs thumbnail / preview extensions (sandboxed)
                                │
                 ┌──────────────┼──────────────────┐
                 ▼              ▼                  ▼
         embedded preview   mesh / point cloud   STEP / IGES / BREP
-        (PNG, JPEG, RLE,   parsers               via OpenCASCADE
-         RGB565, DIB)          │                  (tessellation)
+        (PNG, JPEG, QOI,   parsers               via OpenCASCADE
+         RLE, RGB565, DIB)     │                  (tessellation)
                 │              └────────┬─────────┘
                 │                       ▼
                 │              CPU renderer: orthographic 3/4 view,
                 │              z-buffer, two-light shading, outline,
                 │              supersampled anti-aliasing
                 ▼                       ▼
-                   thumbnail image ──► Finder
+          thumbnail (icon) or preview (space bar) ──► Finder
 ```
 
 - **The renderer runs on the CPU**, so it works inside the Quick Look sandbox and gives the
@@ -363,8 +364,15 @@ Finder ──► Quick Look ──► ModelThumbs extension (sandboxed)
   points) to keep icons fast.
 - **Parsers are hand-written** for speed: a streaming XML scanner for 3MF and AMF, direct
   byte parsing for OBJ, PLY and STL, and bit-level decoding for E57.
-- **STEP support** links OpenCASCADE into the extension. The build script copies the
-  required libraries into the app bundle, so it doesn't depend on Homebrew at runtime.
+- **Two extensions share one engine.** The thumbnail extension draws Finder icons; the
+  preview extension draws the larger image shown when you press space (800 points on its
+  longest side). Both use the same parsers and renderer and have the same read-only, no-network
+  sandbox.
+- **3MF projects:** the largest image stored in the file is used, with plate 1 winning ties.
+  When a 3MF is rendered, Bambu Studio and OrcaSlicer projects use their saved filament
+  colors and only plate 1 is drawn, so the model isn't shrunk to fit every plate.
+- **STEP support** links OpenCASCADE into the extensions. `make build CAD=1` copies the
+  required libraries into the app bundle once, so it doesn't depend on Homebrew at runtime.
 - **Up axis:** 3MF, STL, AMF, STEP and point clouds are treated as Z-up. OBJ, glTF, VRML
   and X3D are converted from Y-up. Collada follows the file's `up_axis`.
 
@@ -404,6 +412,7 @@ model-thumbs/
 │   │   ├── Loader3MF.swift        3MF (incl. Bambu / Orca production extension)
 │   │   ├── LoaderE57.swift        E57 point clouds
 │   │   ├── LoaderPreviews.swift   Embedded previews (resin, CAD apps, Blender…)
+│   │   ├── ImageDecode.swift      Legacy image formats (RGB565, RLE, DIB, QOI)
 │   │   └── …
 │   ├── CAD/                 OpenCASCADE bridge (C++) for STEP / IGES / BREP
 │   ├── Extension/           Quick Look thumbnail provider
@@ -417,7 +426,8 @@ model-thumbs/
 │   ├── qlcheck.swift        Requests thumbnails through Quick Look with a time limit
 │   └── bundle_dylibs.py     Copies OpenCASCADE libraries into the app bundle
 ├── Tests/
-│   └── make_malformed.py    Malformed model files for verify.py
+│   ├── make_malformed.py    Malformed model files for verify.py
+│   └── make_qoi_samples.py  Regenerates the QOI G-code samples
 ├── Resources/
 │   └── Extension.entitlements
 └── Samples/                 Small test files used by make verify
