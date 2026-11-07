@@ -106,8 +106,12 @@ It's enabled automatically in most cases.
 
 Then open a folder with your models in Finder. Icon view and gallery view show thumbnails best.
 
-Press space on a file for a large preview. It shows the image stored in the file when it has
-one, and renders the model when it doesn't.
+Press space on a file for a large preview. It shows the largest image stored in the file when it has
+one, and renders the model when it doesn't. A 3MF whose only image is small is rendered too,
+because that's sharper.
+
+Renders of Bambu Studio and OrcaSlicer projects use the saved filament colors and show plate 1.
+Hand-painted faces show the base filament color.
 
 ### About signing
 
@@ -221,7 +225,7 @@ Then open ModelThumbs and click **Refresh thumbnails**, or run `qlmanage -r cach
 | Setting | Default | Effect |
 |---|---|---|
 | `PreferEmbedded3MFThumbnail` | `true` | Use the slicer's preview image in 3MF files when there is one |
-| `ModelColor` | `#8FA8C7` (slate blue) | Base colour for rendered meshes and point clouds |
+| `ModelColor` | `#8FA8C7` (slate blue) | Base colour for rendered meshes and point clouds. Setting it also replaces saved filament colours |
 
 ---
 

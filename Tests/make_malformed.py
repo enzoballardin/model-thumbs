@@ -12,6 +12,7 @@ import json
 import os
 import struct
 import sys
+import zipfile
 
 root = sys.argv[1]
 d = os.path.join(root, "models")
@@ -59,6 +60,17 @@ header = (b"FIELDS x y z\nSIZE -4 4 4\nTYPE F F F\nCOUNT 1000000 1 1\nWIDTH 100\
           b"POINTS 100\nDATA binary\n")
 with open(os.path.join(d, "negsize.pcd"), "wb") as f:
     f.write(header + b"\0" * 4096)
+
+# A valid triangle with broken slicer colour data.
+model = ('<model><resources><object id="1"><mesh><vertices><vertex x="0" y="0" z="0"/><vertex x="9" y="0" z="0"/>'
+         '<vertex x="0" y="9" z="0"/></vertices><triangles><triangle v1="0" v2="1" v3="2"/></triangles></mesh></object>'
+         '</resources><build><item objectid="1"/></build></model>')
+config = ('<config><object id="1"><metadata key="extruder" value="99999999999999999999"/>'
+          '<part id="-5"><metadata key="extruder" value="-3"/></part></object><part id="1"/></config>')
+with zipfile.ZipFile(os.path.join(d, "badcolors.3mf"), "w") as z:
+    z.writestr("3D/3dmodel.model", model)
+    z.writestr("Metadata/project_settings.config", json.dumps({"filament_colour": ["nope", "#12", "#GGGGGG"]}))
+    z.writestr("Metadata/model_settings.config", config)
 
 # Zip entry declaring a 2 GB size for 2 bytes of data.
 name = b"3D/3dmodel.model"
