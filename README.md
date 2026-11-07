@@ -101,10 +101,13 @@ tools) have registered on this Mac, so ModelThumbs covers those too.
 ### Check it's enabled
 
 Open **System Settings → General → Login Items & Extensions → Quick Look** (on older macOS:
-**Privacy & Security → Extensions → Quick Look**) and make sure **ModelThumbs** is switched on.
+**Privacy & Security → Extensions → Quick Look**) and make sure **ModelThumbs** and **ModelThumbs Preview** are switched on.
 It's enabled automatically in most cases.
 
 Then open a folder with your models in Finder. Icon view and gallery view show thumbnails best.
+
+Press space on a file for a large preview. It shows the image stored in the file when it has
+one, and renders the model when it doesn't.
 
 ### About signing
 
@@ -400,6 +403,7 @@ model-thumbs/
 │   │   └── …
 │   ├── CAD/                 OpenCASCADE bridge (C++) for STEP / IGES / BREP
 │   ├── Extension/           Quick Look thumbnail provider
+│   ├── Preview/             Quick Look preview provider (what space shows)
 │   ├── App/                 Host app (status window, refresh button)
 │   └── CLI/                 modelthumbs-render command-line tool
 ├── Tools/

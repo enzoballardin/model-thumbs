@@ -16,11 +16,14 @@
 APP_NAME := ModelThumbs
 EXT_NAME := ModelThumbsThumbnailer
 EXT_ID   := com.modelthumbs.app.thumbnailer
+PREVIEW_NAME := ModelThumbsPreviewer
+PREVIEW_ID   := com.modelthumbs.app.previewer
 
 BUILD := build
 OBJ   := $(BUILD)/obj
 APP   := $(BUILD)/$(APP_NAME).app
 EXT   := $(APP)/Contents/PlugIns/$(EXT_NAME).appex
+PREVIEW := $(APP)/Contents/PlugIns/$(PREVIEW_NAME).appex
 
 PREFIX ?= $(HOME)/Applications
 DEST   := $(PREFIX)/$(APP_NAME).app
@@ -63,20 +66,25 @@ endif
 	$(OBJ)/uticheck $$(python3 -I Tools/file_types.py exts $(CAD)) > $(BUILD)/system-types.txt
 	$(SWIFTC) -module-name $(EXT_NAME) -parse-as-library -application-extension $(CORE) Sources/Extension/*.swift $(CAD_SWIFT) \
 	  -Xlinker -e -Xlinker _NSExtensionMain -Xlinker -headerpad_max_install_names -o $(OBJ)/$(EXT_NAME)
+	$(SWIFTC) -module-name $(PREVIEW_NAME) -parse-as-library -application-extension $(CORE) Sources/Preview/*.swift $(CAD_SWIFT) \
+	  -Xlinker -e -Xlinker _NSExtensionMain -Xlinker -headerpad_max_install_names -o $(OBJ)/$(PREVIEW_NAME)
 	$(SWIFTC) -module-name $(APP_NAME) Sources/App/main.swift -o $(OBJ)/$(APP_NAME)
 	$(SWIFTC) -module-name modelthumbs_render $(CORE) Sources/CLI/main.swift $(CAD_SWIFT) \
 	  -Xlinker -headerpad_max_install_names -o $(OBJ)/modelthumbs-render
-	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources $(EXT)/Contents/MacOS
+	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources $(EXT)/Contents/MacOS $(PREVIEW)/Contents/MacOS
 	cp $(OBJ)/$(APP_NAME) $(OBJ)/modelthumbs-render $(APP)/Contents/MacOS/
 	cp $(OBJ)/$(EXT_NAME) $(EXT)/Contents/MacOS/
-	python3 -I Tools/file_types.py plists $(CAD) $(BUILD)/system-types.txt $(MIN_OS) $(APP)/Contents/Info.plist $(EXT)/Contents/Info.plist
-	plutil -lint $(APP)/Contents/Info.plist $(EXT)/Contents/Info.plist
+	cp $(OBJ)/$(PREVIEW_NAME) $(PREVIEW)/Contents/MacOS/
+	python3 -I Tools/file_types.py plists $(CAD) $(BUILD)/system-types.txt $(MIN_OS) $(APP)/Contents/Info.plist $(EXT)/Contents/Info.plist $(PREVIEW)/Contents/Info.plist
+	plutil -lint $(APP)/Contents/Info.plist $(EXT)/Contents/Info.plist $(PREVIEW)/Contents/Info.plist
 ifeq ($(CAD),1)
 	python3 -I Tools/bundle_dylibs.py $(EXT)/Contents/MacOS/$(EXT_NAME) $(EXT)/Contents/Frameworks @executable_path/../Frameworks \
-	  $(APP)/Contents/MacOS/modelthumbs-render=@executable_path/../PlugIns/$(EXT_NAME).appex/Contents/Frameworks
+	  $(APP)/Contents/MacOS/modelthumbs-render=@executable_path/../PlugIns/$(EXT_NAME).appex/Contents/Frameworks \
+	  $(PREVIEW)/Contents/MacOS/$(PREVIEW_NAME)=@executable_path/../../../$(EXT_NAME).appex/Contents/Frameworks
 	find $(EXT)/Contents/Frameworks -name '*.dylib' -exec codesign --force --sign "$(SIGN)" --timestamp=none {} +
 endif
 	codesign --force --sign "$(SIGN)" --timestamp=none --entitlements Resources/Extension.entitlements $(EXT)
+	codesign --force --sign "$(SIGN)" --timestamp=none --entitlements Resources/Extension.entitlements $(PREVIEW)
 	codesign --force --sign "$(SIGN)" --timestamp=none $(APP)/Contents/MacOS/modelthumbs-render
 	codesign --force --sign "$(SIGN)" --timestamp=none $(APP)
 	@echo "Built $(APP). Next: make verify"
@@ -99,18 +107,21 @@ install: verify
 	done
 	mkdir -p "$(PREFIX)"
 	test ! -d "$(DEST)" || pluginkit -r "$(DEST)/Contents/PlugIns/$(EXT_NAME).appex"
+	test ! -d "$(DEST)/Contents/PlugIns/$(PREVIEW_NAME).appex" || pluginkit -r "$(DEST)/Contents/PlugIns/$(PREVIEW_NAME).appex"
 	test ! -d "$(DEST)" || $(LSREGISTER) -u "$(DEST)"
 	rm -rf "$(DEST)"
 	ditto $(APP) "$(DEST)"
 	$(LSREGISTER) -f -R "$(DEST)"
-	pluginkit -a "$(DEST)/Contents/PlugIns/$(EXT_NAME).appex"
+	pluginkit -a "$(DEST)/Contents/PlugIns/$(EXT_NAME).appex" "$(DEST)/Contents/PlugIns/$(PREVIEW_NAME).appex"
 	# Registration isn't instant, and the first add can be dropped right after lsregister.
 	sleep 3
-	pluginkit -a "$(DEST)/Contents/PlugIns/$(EXT_NAME).appex"
+	pluginkit -a "$(DEST)/Contents/PlugIns/$(EXT_NAME).appex" "$(DEST)/Contents/PlugIns/$(PREVIEW_NAME).appex"
 	sleep 2
 	pluginkit -e use -i $(EXT_ID)
+	pluginkit -e use -i $(PREVIEW_ID)
 	sleep 1
 	pluginkit -m -i $(EXT_ID) | grep -q '^+' || { echo "The thumbnail extension didn't register. See Troubleshooting in README.md"; exit 1; }
+	pluginkit -m -i $(PREVIEW_ID) | grep -q '^+' || { echo "The preview extension didn't register. See Troubleshooting in README.md"; exit 1; }
 	qlmanage -r
 	qlmanage -r cache
 	@echo "Installed to $(DEST). Next: make check-quicklook"
@@ -123,6 +134,7 @@ check-quicklook:
 
 uninstall:
 	test ! -d "$(DEST)" || pluginkit -r "$(DEST)/Contents/PlugIns/$(EXT_NAME).appex"
+	test ! -d "$(DEST)/Contents/PlugIns/$(PREVIEW_NAME).appex" || pluginkit -r "$(DEST)/Contents/PlugIns/$(PREVIEW_NAME).appex"
 	test ! -d "$(DEST)" || $(LSREGISTER) -u "$(DEST)"
 	rm -rf "$(DEST)"
 	qlmanage -r

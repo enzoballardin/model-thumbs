@@ -2,7 +2,7 @@
 """File types the extension handles, and the Info.plists generated from them.
 
 usage: file_types.py exts <cad 0|1>
-       file_types.py plists <cad 0|1> <system-types.txt> <min_os> <app.plist> <ext.plist>
+       file_types.py plists <cad 0|1> <system-types.txt> <min_os> <app.plist> <ext.plist> <preview.plist>
 """
 import plistlib
 import sys
@@ -60,7 +60,7 @@ def exts(cad):
     return sorted(found)
 
 
-def plists(cad, types_path, min_os, app_path, ext_path):
+def plists(cad, types_path, min_os, app_path, ext_path, preview_path):
     with open(types_path) as f:
         extra = [line.rstrip("\n").split("\t")[1] for line in f if "\t" in line]
     types = active(cad)
@@ -85,6 +85,16 @@ def plists(cad, types_path, min_os, app_path, ext_path):
                                        "NSExtensionPrincipalClass": "ThumbnailProvider",
                                        "NSExtensionAttributes": {"QLSupportedContentTypes": supported,
                                                                  "QLThumbnailMinimumDimension": 0}}}, f)
+    with open(preview_path, "wb") as f:
+        plistlib.dump({**common, "CFBundleExecutable": "ModelThumbsPreviewer",
+                       "CFBundleIdentifier": "com.modelthumbs.app.previewer",
+                       "CFBundleName": "ModelThumbsPreviewer", "CFBundleDisplayName": "ModelThumbs Preview",
+                       "CFBundlePackageType": "XPC!", "CFBundleSupportedPlatforms": ["MacOSX"],
+                       "NSExtension": {"NSExtensionPointIdentifier": "com.apple.quicklook.preview",
+                                       "NSExtensionPrincipalClass": "PreviewProvider",
+                                       "NSExtensionAttributes": {"QLSupportedContentTypes": supported,
+                                                                 "QLIsDataBasedPreview": True,
+                                                                 "QLSupportsSearchableItems": False}}}, f)
     print(f"{len(imported)} declared types, {len(supported)} supported, {len(extra)} from this Mac")
 
 
@@ -93,7 +103,7 @@ def main():
     if command == "exts":
         print(" ".join(exts(cad)))
     elif command == "plists":
-        plists(cad, *sys.argv[3:7])
+        plists(cad, *sys.argv[3:8])
     else:
         sys.exit(f"unknown command: {command}")
 
