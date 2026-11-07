@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
-"""Writes malformed model files into <dir>/models.
+"""Writes malformed model files into <dir>/models for Tools/verify.py.
 
-Each one crashed the parsers or read memory or files it shouldn't before the bounds
-checks went in. sibling.gltf is the exception: it has to keep rendering. Run
-modelthumbs-render on each one; none should die on a signal. They carry no payload.
-
-usage: make_malformed.py <dir>
+Each one once crashed the parsers or read memory or files it shouldn't. They carry no
+payload. usage: make_malformed.py <dir>
 """
 import base64
 import json
@@ -60,6 +57,15 @@ header = (b"FIELDS x y z\nSIZE -4 4 4\nTYPE F F F\nCOUNT 1000000 1 1\nWIDTH 100\
           b"POINTS 100\nDATA binary\n")
 with open(os.path.join(d, "negsize.pcd"), "wb") as f:
     f.write(header + b"\0" * 4096)
+
+# QOI previews: cut off partway through, and claiming a size the data can't hold.
+good_qoi = b"qoif" + struct.pack(">II", 4, 4) + bytes([4, 0]) + bytes([0xFE, 9, 9, 9]) * 16
+huge_qoi = b"qoif" + struct.pack(">II", 8000, 8000) + bytes([4, 0]) + bytes([0xFE, 1, 2, 3]) * 4
+with open(os.path.join(d, "truncqoi.gcode"), "w") as f:
+    f.write("; thumbnail_QOI begin 4x4 40\n; " + base64.b64encode(good_qoi[:30]).decode() + "\n; thumbnail_QOI end\n")
+with open(os.path.join(d, "hugeqoi.bgcode"), "wb") as f:
+    f.write(b"GCDE" + struct.pack("<IH", 1, 0) + struct.pack("<HHI", 5, 0, len(huge_qoi))
+            + struct.pack("<HHH", 2, 8000, 8000) + huge_qoi)
 
 # A valid triangle with broken slicer colour data.
 model = ('<model><resources><object id="1"><mesh><vertices><vertex x="0" y="0" z="0"/><vertex x="9" y="0" z="0"/>'
