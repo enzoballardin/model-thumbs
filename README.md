@@ -430,13 +430,20 @@ model-thumbs/
 ModelThumbs was created by [@enzoballardin](https://github.com/enzoballardin), with
 contributions from:
 
-- [@pleasantone](https://github.com/pleasantone) (Paul Traina): fixed thumbnails that only
-  filled a quarter of the icon on Retina displays
-  ([#2](https://github.com/enzoballardin/model-thumbs/pull/2)), hardened the parsers against
-  malformed files ([#3](https://github.com/enzoballardin/model-thumbs/pull/3)), added the
-  build verification script ([#4](https://github.com/enzoballardin/model-thumbs/pull/4)), and
-  replaced the installer's Quick Look test with a reliable one
-  ([#5](https://github.com/enzoballardin/model-thumbs/pull/5)).
+- [@pleasantone](https://github.com/pleasantone) (Paul Traina), who has contributed most of
+  the improvements since the first release:
+  - **Safer install:** suggested replacing the `curl | bash` installer
+    ([#1](https://github.com/enzoballardin/model-thumbs/issues/1)) and built the Makefile
+    that replaced it, with separate build, verify and install steps you can preview with
+    `make -n` ([#6](https://github.com/enzoballardin/model-thumbs/pull/6))
+  - **Space bar previews:** added the Quick Look preview extension ([#7](https://github.com/enzoballardin/model-thumbs/pull/7))
+  - **Better 3MF images:** picks the largest stored image, renders Bambu Studio and
+    OrcaSlicer projects in their filament colors, and shows plate 1 ([#8](https://github.com/enzoballardin/model-thumbs/pull/8))
+  - **QOI G-code previews:** PrusaSlicer files with QOI thumbnails now get an icon ([#9](https://github.com/enzoballardin/model-thumbs/pull/9))
+  - **Retina fix:** thumbnails no longer fill only a quarter of the icon ([#2](https://github.com/enzoballardin/model-thumbs/pull/2))
+  - **Reliability:** hardened the parsers against malformed files ([#3](https://github.com/enzoballardin/model-thumbs/pull/3)), added the
+    build verification script ([#4](https://github.com/enzoballardin/model-thumbs/pull/4)), and replaced the Quick Look install test with a
+    reliable one ([#5](https://github.com/enzoballardin/model-thumbs/pull/5))
 
 Contributions are welcome: open an
 [issue](https://github.com/enzoballardin/model-thumbs/issues) or a
